@@ -5,9 +5,12 @@ Communicate with me: *zanjune@163.com*
 
 ## Download
 下载 SC2RepAnalysis 1.3.3: https://pan.baidu.com/s/1V-115EhV-T00InQX3ucX1w?pwd=alan 
+
 提取码(Password)：alan 
 
+
 (环境已经整合，无需配置)
+
 (The environment is already integrated, no configuration needed.)
 
 ## 使用文档
