@@ -1,0 +1,56 @@
+[Clist]
+"BanelingCocoon" = "毒爆"
+"RavagerCocoon" = "火蟑螂"
+"LurkerMPEgg" = "地刺"
+"Hive" = "三本"
+"Lair" = "二本"
+"OrbitalCommand" = "星轨"
+"PlanetaryFortress" = "要塞"
+"CommandCenterFlying" = "指挥中心起飞"
+"CommandCenter" = "指挥中心落地"
+"OrbitalCommandFlying" = "星轨起飞"
+"FactoryFlying" = "重工厂起飞"
+"StarportFlying" = "星港起飞"
+"BarracksFlying" = "兵营起飞"
+"Factory" = "重工厂落地"
+"Barracks" = "兵营落地"
+"Starport" = "星港落地"
+"BarracksReactor" = "接入双倍挂件(兵营)"
+"BarracksTechLab" = "接入科技挂件(兵营)"
+"StarportTechLab" = "接入科技挂件(星港)"
+"StarportReactor" = "接入双倍挂件(星港)"
+"FactoryReactor" = "接入双倍挂件(重工厂)"
+"FactoryTechLab" = "接入科技挂件(重工厂)"
+"Reactor" = "双倍挂件脱离"
+"TechLab" = "科技挂件脱离"
+"GreaterSpire" = "大龙塔"
+"BroodLordCocoon" = "大龙"
+"TransportOverlordCocoon" = "载货王虫"
+"OverseerSiegeModeCocoon" = "眼虫"
+"OverlordCocoon" = "眼虫"
+
+[CClist]
+"Baneling" = ["毒爆", "毒爆卵"]
+"Ravager" = ["火蟑螂", "火蟑螂茧"]
+"LurkerMP" = ["地刺", "地刺茧"]
+"Lurker" = ["地刺", "地刺茧"]
+"BroodLord" = ["大龙", "大龙茧"]
+"OverlordTransport" = ["载货王虫", "载货王虫茧"]
+"Overseer" = ["眼虫", "眼虫茧"]
+"BroodLordCocoon" = ["大龙茧", "腐化"]
+"TransportOverlordCocoon" = ["载货王虫茧", "房子"]
+"OverseerSiegeModeCocoon" = ["眼虫茧", "房子"]
+"OverlordCocoon" = ["眼虫茧", "房子"]
+"BanelingCocoon" = ["毒爆卵", "小狗"]
+"RavagerCocoon" = ["火蟑螂茧", "蟑螂"]
+"LurkerMPEgg" = ["地刺茧", "刺蛇"]
+"Zergling" = ["小狗", "毒爆卵"]
+"Roach" = ["蟑螂", "火蟑螂茧"]
+"Hydralisk" = ["刺蛇", "地刺茧"]
+"Corruptor" = ["腐化", "大龙茧"]
+
+[CCClist]
+"BanelingBurrowed" = ["毒爆", "小狗"]
+"RavagerBurrowed" = ["火蟑螂", "蟑螂"]
+"Lurker" = ["地刺", "刺蛇"]
+"LurkerBurrowed" = ["地刺", "刺蛇"]

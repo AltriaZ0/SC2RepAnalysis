@@ -1,0 +1,13 @@
+Str.md
+__pycache__
+
+# Rust
+target/
+Cargo.lock
+
+# Tauri
+src-tauri/target/
+
+# rep & logs
+rep/
+logs/
