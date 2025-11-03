@@ -11,3 +11,6 @@ src-tauri/target/
 # rep & logs
 rep/
 logs/
+
+# VSCode
+.vscode/

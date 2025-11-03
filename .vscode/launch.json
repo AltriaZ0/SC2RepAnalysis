@@ -1,16 +1,19 @@
 {
-    // 使用 IntelliSense 了解相关属性。 
-    // 悬停以查看现有属性的描述。
-    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "lldb",
+            "name": "Debug run.py", // 调试配置的名称，可以自定义
+            "type": "python",
             "request": "launch",
-            "name": "Debug",
-            "program": "${workspaceFolder}/<executable file>",
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceFolder}/run.py", // 入口文件
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}", // 工作目录为项目根目录
+            "env": {
+                // 设置环境变量，如果需要的话
+                // "PYTHONPATH": "${workspaceFolder}/src:${env:PYTHONPATH}"
+            },
+            "envFile": "${workspaceFolder}/.env", // main 函数的需要.env 文件，在这里指定
+            "args": ["alone"] // 命令行参数，例如 ["--verbose", "input.txt"]
         }
     ]
 }

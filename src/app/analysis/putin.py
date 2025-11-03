@@ -1,4 +1,4 @@
-from .Analysis import Analysis
+from .Analysis import ReplayAnalyzer
 from app.constants import SC2_SUFFIX
 from app.libs import *
 from pathlib import Path
@@ -32,11 +32,13 @@ def AloneRep(replay_path:str | Path, output_dir: str | Path, progress: ProgressC
     base_dir = replay_path.parent
     name = replay_path.name
     LOG.info("选取的 Rep 文件路径: %s", replay_path)
-    LOG.info("将在此目录创建分析输出: %s/SC2RepAnalysis/%s", base_dir, name)
+    LOG.info("将在此目录创建分析输出: %s\SC2RepAnalysis\%s", base_dir, name)
     _emit(progress, f"开始解析: {name}")
 
     try:
-        ret = Analysis(str(replay_path), str(base_dir))
+        # ret = Analysis(str(replay_path), str(base_dir))
+        analyzer = ReplayAnalyzer(str(replay_path), str(base_dir))
+        result = analyzer.analyze() 
     except Exception as e:
         LOG.exception("解析 replay 失败: %s", replay_path)
         raise e
