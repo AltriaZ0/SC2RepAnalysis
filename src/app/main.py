@@ -3,7 +3,7 @@ from app.log import setup_logging, LOG
 from app.constants import VERSION, UPDATE_DATE
 import argparse
 from app.analysis.core import analyse_core
-
+from app.ProcessTrain.Trans import Trans
 def parse_args(argv=None):
     p = argparse.ArgumentParser(prog="app")
     p.add_argument("--log-level", default="INFO")
@@ -34,7 +34,11 @@ def main(argv=None) -> int:
         #     LOG.info("这其实是一个配置的测试：Fulltime mode not activated.")
 
         args = parse_args(argv)
-        analyse_core(args)
+
+        if args.cmd == "train":
+            Trans(args.kind)
+        else:
+            analyse_core(args)
 
         LOG.info("App exit successfully, bye!")
         return 0

@@ -1,0 +1,17 @@
+/* 清除默认边距，统一盒模型 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* 防止出现滚动条（Tauri 窗口通常不需要） */
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#app {
+  height: 100%;
+}

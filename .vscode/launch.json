@@ -13,7 +13,7 @@
                 // "PYTHONPATH": "${workspaceFolder}/src:${env:PYTHONPATH}"
             },
             "envFile": "${workspaceFolder}/.env", // main 函数的需要.env 文件，在这里指定
-            "args": ["alone"] // 命令行参数，例如 ["--verbose", "input.txt"]
+            "args": ["multi"] // 命令行参数，例如 ["--verbose", "input.txt"]
         }
     ]
 }

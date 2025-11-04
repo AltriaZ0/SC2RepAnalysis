@@ -11,6 +11,5 @@ def analyse_core(args=None):
         rep_path = get_replay_path()
         AloneRep(rep_path, Path(rep_path).parent/"SC2RepAnalysis", None)
     elif args.cmd == "multi":
-        MultiRep()
-    # elif args.cmd == "train":
-    #     trans(args.kind)
+        rep_dir = get_replay_dir()
+        MultiRep(rep_dir, Path(rep_dir).parent/"SC2RepAnalysis", None)

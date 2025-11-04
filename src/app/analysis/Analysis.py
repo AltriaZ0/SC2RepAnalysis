@@ -32,6 +32,7 @@ class ReplayAnalyzer:
         # 存储分析结果
         self.Fullinf=[] # 完整单位信息
         self.UBE_List={}
+        self.PdS=[]
 
         self.ube_players = {}  # 单位建造事件
         self.uie_players = {}  # 建筑建造事件
@@ -470,10 +471,10 @@ class ReplayAnalyzer:
         
         LOG.debug("统计人口信息--ok")
     def _format_data_for_output(self):
-#-------------------------------11.格式化输出------------------------------------------#
+    #-------------------------------11.格式化输出------------------------------------------#
         file = open('{}/{}.txt'.format(self.output_path,self.rep_name), 'w',encoding="utf-8")
         DataForPd={}
-        PdS=[]
+
         for i in self.replay.players:
             file.write("选手{}的建造列表：".format(i)) 
             j=0
@@ -493,7 +494,7 @@ class ReplayAnalyzer:
                     racebattle='{}v{}'.format(self.replay.players[1].play_race[0],self.replay.players[0].play_race[0])
             except:
                 racebattle='{}v{}'.format(self.replay.players[0].play_race[0],"None")
-            PdS.append([re.match('\w{0,}',str(i)[11:]).group(),self.replay.map_name,i.play_race,racebattle,"{}:{}".format(round(self.duration/1.4)//60,round(self.duration/1.4)%60),whetherwin,"","","","{}".format(self.replaypath)])
+            self.PdS.append([re.match('\w{0,}',str(i)[11:]).group(),self.replay.map_name,i.play_race,racebattle,"{}:{}".format(round(self.duration/1.4)//60,round(self.duration/1.4)%60),whetherwin,"","","","{}".format(self.replaypath)])
             while j<self.duration:
                 #---------------构造DataFrame格式的数据-----------------------------#
                 s=[i,"{}:{}".format(round(j/1.4)//60,round(j/1.4)%60)]
@@ -553,7 +554,7 @@ class ReplayAnalyzer:
                     if cc:
                         s.append(','.join(cc))
                         for ddd in dd:
-                            PdS[-1][8]+=','.join(ddd)+','
+                            self.PdS[-1][8]+=','.join(ddd)+','
                     else:
                         s.append('')
                 else:
@@ -593,7 +594,7 @@ class ReplayAnalyzer:
                         if cc:
                             s.append(','.join(cc))
                             if dd:
-                                PdS[-1][7]+=','.join(dd)+','
+                                self.PdS[-1][7]+=','.join(dd)+','
                         else:
                             s.append('')
                     else:
@@ -612,7 +613,7 @@ class ReplayAnalyzer:
                             cc.append(c)
                     if cc:
                         s.append(','.join(cc))
-                        PdS[-1][6]+=','.join(cc)+','
+                        self.PdS[-1][6]+=','.join(cc)+','
                     else:
                         s.append('')
                 else:

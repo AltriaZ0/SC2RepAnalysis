@@ -1,4 +1,11 @@
-from head import *
+from libs import *
+from tkinter import *
+from tkinter import filedialog
+import pandas as pd
+import time
+import win32console
+import win32gui
+
 #==============================================================SC2ARepnalysis 1.3.0更新内容：流程练习==================================================================#
 def Trans(c):
     def refreshText():
@@ -186,5 +193,4 @@ def Trans(c):
         canvas.create_rectangle(0, 0, canvas.winfo_width(), canvas.winfo_height(), fill=TRANSCOLOUR, outline=TRANSCOLOUR)
         canvas.update()
         enter()
-        # print("出现这行字代表窗口没有隐藏")
         

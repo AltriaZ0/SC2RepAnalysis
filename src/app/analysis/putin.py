@@ -36,7 +36,6 @@ def AloneRep(replay_path:str | Path, output_dir: str | Path, progress: ProgressC
     _emit(progress, f"开始解析: {name}")
 
     try:
-        # ret = Analysis(str(replay_path), str(base_dir))
         analyzer = ReplayAnalyzer(str(replay_path), str(base_dir))
         result = analyzer.analyze() 
     except Exception as e:
@@ -49,51 +48,25 @@ def AloneRep(replay_path:str | Path, output_dir: str | Path, progress: ProgressC
     LOG.info(msg)
     _emit(progress, msg)
 
-# def MultiRep():
-#     print("下面，选择想要分析的reps所在的文件夹吧~")
-#     R = tk.Tk()
-#     R.withdraw() 
-#     R.title("选择replay文件夹")
-#     dir=filedialog.askdirectory()
-#     R.withdraw() 
+def MultiRep(replay_dir:str | Path, output_dir: str | Path, progress: ProgressCb = None) -> None:
+    replay_dir = Path(replay_dir)
+    output_dir = Path(output_dir)
 
-#     filesnum=0
-#     for r,d,f in os.walk(dir):
-#         for file in f:
-#             if file[-9:]=="SC2Replay":
-#                 filesnum+=1
+    S=[]
+    for r,d,f in os.walk(replay_dir):
+        for j in f:
+            if j[-9:]=='SC2Replay':
+                T=ReplayAnalyzer("{}/{}".format(r,j),str(replay_dir)) 
+                T.analyze()
+                result = T.PdS
+                if T:
+                    for i in result:
+                        S.append(i)
 
-#     if not dir:
-#         messagebox.showerror(title='QAQ ~', message="没有选择文件夹哦~")
-#         sys.exit()            
-#     if filesnum==0:
-#         messagebox.showerror(title='QAQ ~', message="选择的文件夹里没有replay文件呀~")
-#         sys.exit()
+    dirname=os.path.basename(replay_dir)
+    S_to_excel = pd.DataFrame(S,columns=['ID','地图','种族','种族对抗',"比赛时间","比赛胜负",'升级顺序','建筑顺序','单位顺序',"rep地址"])
+    S_to_excel.to_excel("{}/SC2RepAnalysis/所有对局的建造列表({}目录下).xlsx".format(replay_dir,dirname),index=False)
 
-#     print("选取的录像文件夹所在的路径是{},伦家会在这里创建Rep分析文件夹哦~".format(dir))
-#     print("当前文件夹中一共有{}个rep文件，开始解析......".format(filesnum))
-        
-#     with alive_bar(11*filesnum,title='批量解析进度:') as bar:
-#         S=[]
-#         for r,d,f in os.walk(dir):
-#             for j in f:
-#                 if j[-9:]=='SC2Replay':
-#                     bar.text("[{}]".format(j))
-#                     T=Analysis("{}/{}".format(r,j),dir,bar) 
-#                     if T:
-#                         for i in T:
-#                             S.append(i)
 
-#     dirname=os.path.basename(dir)
-#     S_to_excel = pd.DataFrame(S,columns=['ID','地图','种族','种族对抗',"比赛时间","比赛胜负",'升级顺序','建筑顺序','单位顺序',"rep地址"])
-#     S_to_excel.to_excel("{}/SC2RepAnalysis/所有对局的建造列表({}目录下).xlsx".format(dir,dirname),index=False)
-
-#     if ErrorReport:
-#         ErrorReportTXT = open('{}/SC2RepAnalysis/{}.txt'.format(dir,"ErrorReport"), 'w',encoding="utf-8")
-#         ErrorReportTXT.write(ErrorReport)
-#         ErrorReportTXT.close()
-
-#     messagebox.showinfo(title='=w= ~', message="txt和excel文件已经生成，位于{}/SC2Analysis".format(dir))
-#     os.startfile("{}/SC2RepAnalysis".format(dir))
-
-#---------------------------导入文件------------------------------------#
+    LOG.info("txt和excel文件已经生成，位于{}/SC2Analysis".format(replay_dir))
+    os.startfile("{}/SC2RepAnalysis".format(replay_dir))

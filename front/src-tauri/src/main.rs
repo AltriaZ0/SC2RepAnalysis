@@ -50,7 +50,7 @@ async fn start_python(app: AppHandle, log_level: Option<String>) -> Result<(), S
   let src_dir = root_dir.join("src");
 
   let mut child = Command::new("python")
-      .args(["-m", "app", "--log-level", &lvl])
+      .args(["-m", "app", "--log-level", &lvl,"alone"])
       .current_dir(&src_dir) // ✅ 设置工作目录
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())

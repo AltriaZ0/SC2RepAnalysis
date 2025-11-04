@@ -7,6 +7,10 @@ Cargo.lock
 
 # Tauri
 src-tauri/target/
+src-tauri/gen
+
+# node_modules
+node_modules/
 
 # rep & logs
 rep/
@@ -14,3 +18,4 @@ logs/
 
 # VSCode
 .vscode/
+*.jks

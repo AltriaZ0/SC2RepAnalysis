@@ -1,11 +1,23 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "identifier": "main-capability",
+  "description": "Capability for the main window",
+  "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:path:default",
+    "core:event:default",
+
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-start-dragging",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-set-title",
+    "core:window:allow-internal-toggle-maximize",
+
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default"
+
   ]
 }

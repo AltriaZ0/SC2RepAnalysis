@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "sc2rep-frontend",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.altria.sc2repshell",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,11 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "sc2rep-frontend",
+        "title": "Your App Title",
         "width": 800,
         "height": 600,
+        "decorations": false,
+        "transparent": true,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "alwaysOnTop": false
       }
     ],
     "security": {
