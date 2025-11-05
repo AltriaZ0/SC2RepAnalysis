@@ -124,12 +124,13 @@ import Topbar from './Topbar.vue';
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 12px 24px;
+  padding: 5px 12px;
   gap: 12px;
   color: #d1d5db;
   text-decoration: none;
   transition: all 0.2s ease;
   border-radius: 4px;
+  border: 1px solid #2d2d2d;
 }
 
 .nav-item:hover {

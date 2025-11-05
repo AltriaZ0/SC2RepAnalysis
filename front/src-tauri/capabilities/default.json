@@ -17,7 +17,11 @@
     "core:app:default",
     "core:resources:default",
     "core:menu:default",
-    "core:tray:default"
-
+    "core:tray:default",
+      "fs:default",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/*" }]
+    }
   ]
 }

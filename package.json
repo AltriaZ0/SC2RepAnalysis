@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "marked": "^16.4.1",
     "vue-router": "^4.6.3"
   }
 }

@@ -19,7 +19,9 @@
         "transparent": true,
         "resizable": true,
         "fullscreen": false,
-        "alwaysOnTop": false
+        "alwaysOnTop": false,
+        "minWidth": 800,
+        "minHeight": 600
       }
     ],
     "security": {

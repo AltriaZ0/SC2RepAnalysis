@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { invoke } from '@tauri-apps/api/core'
   import { Window } from '@tauri-apps/api/window';
-  
   import { listen, UnlistenFn } from '@tauri-apps/api/event'
 
   const appWindow = new Window('main');
@@ -37,7 +36,7 @@ import Topbar from '../components/Topbar.vue';
 
 <template>
   <!-- 根容器：撑满屏幕，垂直布局 -->
-  <div class=" h-screen flex flex-col " id="mainBody">
+  <div class="mainBody">
 
       <div class="mainPage">
         <Sidebar class="Sidebar"/>
@@ -48,7 +47,7 @@ import Topbar from '../components/Topbar.vue';
 </template>
 
 <style>
-  #mainBody{
+  .mainBody{
     background: rgb(93, 100, 105);
     width: 100%;
     height: 100%;
@@ -61,4 +60,24 @@ import Topbar from '../components/Topbar.vue';
     flex: 1; /* 占据剩余空间 */
 
   }
+
+
+  /* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b2a2a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9e9e9e;
+}
 </style>
