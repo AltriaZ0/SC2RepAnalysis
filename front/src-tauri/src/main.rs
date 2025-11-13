@@ -1,91 +1,138 @@
-use std::process::Stdio;
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::io::Write;
+use std::process::{Command, Stdio};
+use tauri::path::BaseDirectory;
+use tauri::{command, AppHandle, Manager};
 
-use tauri::Emitter; // ← 必须：emit 来自这个 trait
-use tauri::{AppHandle, Manager};
-use tokio::{
-    io::{AsyncBufReadExt, BufReader},
-    process::{Child, Command},
-    sync::Mutex,
-};
-
-use std::path::PathBuf;
-fn find_project_root() -> PathBuf {
-    let mut dir = std::env::current_dir().unwrap();
-    loop {
-        if dir.join(".project-root").exists() {
-            return dir;
-        }
-        if !dir.pop() {
-            break;
-        }
-    }
-    std::env::current_dir().unwrap()
+// ---------- 数据结构 ----------
+#[derive(Serialize, Deserialize)]
+struct AnalyzeOptions {
+    analyze_type: String,
+    output_dir: String,
+    basic: bool,
+    bo: bool,
+    actions: bool,
+    units: bool,
+    mapheat: bool,
+    exportXlsx: bool,
+    tz: String,
+    lang: String,
 }
 
-#[derive(Default)]
-struct PyProc(Arc<Mutex<Option<Child>>>);
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnalyzeResult {
+    #[serde(rename = "map_name")]
+    pub map_name: String,
+    #[serde(rename = "ladder?", default)]
+    pub ladder: bool,
+    pub duration: u32,
+    #[serde(rename = "playersInfo")]
+    pub players_info: HashMap<String, PlayerInfo>,
+    pub winner: String,
+    pub region: String,
+    #[serde(rename = "endTime")]
+    end_time: Option<String>,
+    #[serde(rename = "raceBattle")]
+    pub race_battle: String,
+    pub output: String,
+}
 
-// 把子进程 stdout/stderr 的每一行转成事件发给前端
-async fn read_and_emit<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
-    reader: R,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PlayerInfo {
+    pub race: String,
+    pub result: bool,
+    pub buildOrder: Vec<BoStep>,
+    pub outputPath: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BoStep {
+    pub t: String,
+    pub action: String,
+}
+
+// ---------- Tauri 命令 ----------
+#[command]
+async fn analyze_replay(
     app: AppHandle,
-    event: &'static str,
-) {
-    let mut lines = BufReader::new(reader).lines();
-    while let Ok(Some(line)) = lines.next_line().await {
-        let _ = app.emit(event, line.clone());
-    }
-}
+    path: String,
+    options: AnalyzeOptions,
+) -> Result<AnalyzeResult, String> {
+    #[cfg(target_os = "windows")]
+    let rel = "bin/main.exe";
+    #[cfg(not(target_os = "windows"))]
+    let rel = "bin/main";
 
-#[tauri::command]
-async fn start_python(app: AppHandle, log_level: Option<String>) -> Result<(), String> {
-    // 先发一条测试事件，确认前端监听正常
-    let _ = app.emit("py:stdout", "tauri command received: start_python");
+    let py_bin = app
+        .path()
+        .resolve(rel, BaseDirectory::Resource)
+        .map_err(|e| format!("resolve py bin error: {e}"))?;
 
-    // 根据你的环境选择 python/py/绝对路径
-    let lvl = log_level.unwrap_or_else(|| "INFO".into());
-
-    let root_dir = find_project_root();
-    let src_dir = root_dir.join("src");
-
-    let mut child = Command::new("python")
-        .args(["-m", "app", "--log-level", &lvl, "alone"])
-        .current_dir(&src_dir) // ✅ 设置工作目录
+    // 启动子进程
+    let mut child = Command::new(py_bin)
+        .arg("json")
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("spawn python failed: {e}"))?;
+        .map_err(|e| format!("spawn error: {e}"))?;
 
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
+    // 写入请求 JSON
+    let input = serde_json::json!({
+      "path": path,
+      "options": options
+    })
+    .to_string();
 
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(read_and_emit(stdout, app_clone, "py:stdout"));
-    let app_clone = app.clone();
-    tauri::async_runtime::spawn(read_and_emit(stderr, app_clone, "py:stderr"));
-
-    // 保存子进程句柄
-    let state = app.state::<PyProc>();
-    *state.0.lock().await = Some(child);
-    Ok(())
-}
-
-#[tauri::command]
-async fn stop_python(app: AppHandle) -> Result<(), String> {
-    let state = app.state::<PyProc>();
-    if let Some(mut child) = state.0.lock().await.take() {
-        let _ = child.kill().await;
-        let _ = app.emit("py:stdout", "python process killed");
+    {
+        let stdin = child.stdin.as_mut().ok_or("failed to open child stdin")?;
+        stdin
+            .write_all(input.as_bytes())
+            .map_err(|e| format!("stdin write error: {e}"))?;
     }
-    Ok(())
+    drop(child.stdin.take());
+
+    // 等待子进程结束
+    let output = child
+        .wait_with_output()
+        .map_err(|e| format!("wait_with_output error: {e}"))?;
+
+    let stdout_text = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr_text = String::from_utf8_lossy(&output.stderr).to_string();
+
+    println!("python stdout = {}", stdout_text);
+    println!("python stderr = {}", stderr_text);
+
+    if !output.status.success() {
+        return Err(format!(
+            "python exit code: {:?}\nstderr:\n{}",
+            output.status, stderr_text
+        ));
+    }
+
+    if stdout_text.trim().is_empty() {
+        return Err(format!("python stdout is empty.\nstderr:\n{}", stderr_text));
+    }
+
+    let parsed: AnalyzeResult = serde_json::from_str(&stdout_text).map_err(|e| {
+        format!(
+            "JSON parse error: {e}\nstdout:\n{}\nstderr:\n{}",
+            stdout_text, stderr_text
+        )
+    })?;
+
+    Ok(parsed)
 }
 
 fn main() {
+    println!("Hello, world!");
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
-        .manage(PyProc::default()) // ← 构造并注册全局状态，否则会有“never constructed”
-        .invoke_handler(tauri::generate_handler![start_python, stop_python]) // ← 注册命令
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .invoke_handler(tauri::generate_handler![analyze_replay])
         .run(tauri::generate_context!())
         .expect("error while running tauri app");
 }

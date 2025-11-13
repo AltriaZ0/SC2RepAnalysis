@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@tauri-apps/api": "^2.9.0",
     "marked": "^16.4.1",
     "vue-router": "^4.6.3"
   }

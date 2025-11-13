@@ -5,7 +5,7 @@ from app.constants import LOG_DIR
 LOG = logging.getLogger("app")  # 本模块（及子模块）公用 logger
 
 def setup_logging(level: str = "INFO") -> None:
-    lvl = getattr(logging, level.upper(), logging.INFO)
+    # lvl = getattr(logging, level.upper(), logging.INFO)
     
     # from pathlib import Path
     # log_dir = Path("logs")
@@ -26,9 +26,9 @@ def setup_logging(level: str = "INFO") -> None:
     # logging.getLogger("asyncio").setLevel(logging.WARNING)
 
     # 控制台输出
-    console = logging.StreamHandler()
-    console.setFormatter(fmt)
-    console.setLevel(level)
+    # console = logging.StreamHandler()
+    # console.setFormatter(fmt)
+    # console.setLevel(level)
 
     # 文件输出（追加模式，utf-8）
     # file_handler = logging.FileHandler(log_dir / "app.log", encoding="utf-8")
@@ -44,7 +44,7 @@ def setup_logging(level: str = "INFO") -> None:
     # for h in list(root.handlers):
     #     root.removeHandler(h)
 
-    root.addHandler(console)
+    # root.addHandler(console)
     root.addHandler(file_handler)
     root.setLevel(logging.DEBUG)
 

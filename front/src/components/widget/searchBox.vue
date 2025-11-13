@@ -9,10 +9,50 @@
             </svg>
           </button>
         </div>
+      <div class="dropdown">
+        <span class="search-item dropdown-toggle">排序</span>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item">对局时间</a>
+          <a href="#" class="dropdown-item">游戏时长</a>
+          <a href="#" class="dropdown-item">种族</a>
+        </div>
+      </div> 
+        <div class="dropdown">
+        <span class="search-item dropdown-toggle">玩家名</span>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item">Player1</a>
+          <a href="#" class="dropdown-item">Player2</a>
+        </div>
+      </div> 
       </header>
+
 </template>
 
 <style>
+
+  .search-item {
+    display: flex;
+    align-items: center;
+    margin:0px 10px;
+    padding: 5px 12px;
+    gap: 12px;
+    color: #d1d5db;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    border: 1px solid #2d2d2d;
+  }
+
+  .nav-item:hover {
+    background-color: #343638b9;
+    color: #ffffff;
+  }
+
+  /* 激活状态（使用 Vue Router 的类名更好） */
+  .router-link-active {
+    background-color: #8a5252b9;
+    color: #ffffff;
+  }
 
 /* 顶部搜索栏 */
 .topbar {
@@ -25,7 +65,7 @@
 
 .search-box {
   position: relative;
-  width: 400px;
+  width: 50%;
 }
 
 .search-input {
@@ -58,5 +98,6 @@
   width: 20px;
   height: 20px;
 }
+
 
 </style>

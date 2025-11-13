@@ -4,8 +4,19 @@ from .file_io import *
 
 # 分析功能的入口，选择处理分支
 
-def analyse_core(args=None):
+def analyse_core(json_data):
     """分析核心函数，根据命令行参数调用相应的分析功能"""
+def analyse_core(json_data):
+    output_dir = Path(json_data["options"]["output_dir"])  # 把 str 变成 Path
+    if json_data["options"]["analyze_type"] == "alone":
+        rep_path = json_data["path"]
+        return AloneRep(rep_path, output_dir / "replays", None)
+    elif json_data["options"]["analyze_type"] == "multi":
+        rep_path = json_data["path"]
+        return MultiRep(rep_path, output_dir / "replays", None)
+
+        
+def analyse_core_cmd(args):
     if args.cmd == "alone":
         # AloneRep(args.full)
         rep_path = get_replay_path()

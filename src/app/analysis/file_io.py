@@ -19,7 +19,7 @@ def get_replay_path():
     return path
 
 def get_replay_dir():
-    print("下面，选择想要分析的reps所在的文件夹吧~")
+    # print("下面，选择想要分析的reps所在的文件夹吧~")
     R = Tk()
     R.withdraw() 
     R.title("选择replay文件夹")

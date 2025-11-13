@@ -27,6 +27,7 @@
 </template>
 
 <style>
+
   .icon {
     width: 16px;
     height: 16px;
@@ -48,8 +49,9 @@
     height: 30px;
     user-select: none;
     -webkit-user-select: none;
-    transition: background 0.1s ease;
+    transition: all 0.2s ease;
   }
+  
   .titlebar-button:hover {
     background: #333333;
   }

@@ -29,26 +29,42 @@
   })
   onBeforeUnmount(() => { unOut?.(); unErr?.() })
 
-import DashBoard from '../components/Dashboard.vue';  
 import Sidebar from '../components/Sidebar.vue';
-import Topbar from '../components/Topbar.vue';
+
+import { RouterView, useRoute } from 'vue-router'
+
+const route = useRoute()
 </script>
 
 <template>
-  <!-- 根容器：撑满屏幕，垂直布局 -->
+  <!-- 根容器 -->
   <div class="mainBody">
-
       <div class="mainPage">
-        <Sidebar class="Sidebar"/>
-        <DashBoard class="DashBoard"/>
+        <Sidebar class="Sidebar"  v-if="!route.meta.noLayout" />
+        <div class="DashBoard">
+          <router-view />
+        </div>
       </div>
-
   </div>  
 </template>
 
 <style>
+:root {
+  --bg: #0f1113;
+  --panel: #1a1d21;
+  --panel-2: #171a1e;
+  --muted: #a6adbb;
+  --border: #2a2f36;
+  --primary: #3b82f6; /* 蓝 */
+  --success: #22c55e; /* 绿 */
+  --text: #e5e7eb;
+  --warn: #f59e0b;
+  --bg:#0f1113;
+  --panel:#1a1d21;
+  --panel-2:#171a1e;
+}
+
   .mainBody{
-    background: rgb(93, 100, 105);
     width: 100%;
     height: 100%;
   }
@@ -58,7 +74,6 @@ import Topbar from '../components/Topbar.vue';
   }
   .DashBoard{
     flex: 1; /* 占据剩余空间 */
-
   }
 
 
@@ -80,4 +95,70 @@ import Topbar from '../components/Topbar.vue';
 ::-webkit-scrollbar-thumb:hover {
   background: #9e9e9e;
 }
+
+/* 下拉菜单相关样式 */
+.dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #1a1a1a;
+  border: 1px solid #2d2d2d;
+  border-radius: 4px;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.dropdown-toggle::after {
+  content: "▼";
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+.dropdown:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 8px 12px;
+  color: #d1d5db;
+  text-decoration: none;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.toolbar { 
+  position: fixed;
+  width: 100%;
+  height: var(--nav-height);
+  display: flex;
+  gap: 16px;
+  background-color: #0f1012;
+  padding: 8px 12px;
+  user-select: none;
+  border-bottom: 1px solid #2d2d2d;
+  z-index: 10;
+}
+
 </style>

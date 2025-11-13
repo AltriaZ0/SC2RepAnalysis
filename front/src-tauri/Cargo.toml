@@ -16,6 +16,10 @@ serde = { version = "1", features = ["derive"] }
 log = "0.4"
 tauri-plugin-log = "2"
 tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-global-shortcut = "2" 
+serde_with = { version = "3", features = ["chrono_0_4"] }
+tauri-plugin-opener = "2"
 
 [build-dependencies]
 tauri-build = { version = "^2", features = [] }

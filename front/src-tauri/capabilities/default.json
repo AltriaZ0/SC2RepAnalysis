@@ -2,26 +2,42 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main-capability",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main",
+    "screen-banner"
+  ],
   "permissions": [
     "core:path:default",
     "core:event:default",
-
+    "core:default",
     "core:window:allow-close",
     "core:window:allow-minimize",
     "core:window:allow-start-dragging",
     "core:window:allow-toggle-maximize",
     "core:window:allow-set-title",
     "core:window:allow-internal-toggle-maximize",
-
+    "core:window:allow-set-ignore-cursor-events",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-get-all-windows",
+    "opener:allow-open-path",
+    "global-shortcut:allow-register",
+    "dialog:default",
     "core:app:default",
     "core:resources:default",
     "core:menu:default",
     "core:tray:default",
-      "fs:default",
-    {
-      "identifier": "fs:allow-exists",
-      "allow": [{ "path": "$APPDATA/*" }]
+    "fs:scope-appdata-recursive",
+    "fs:allow-appdata-read-recursive",
+    "fs:allow-appdata-write-recursive",
+    "opener:default",
+    "fs:default",
+      {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$APPDATA/**/*"
+        }
+      ]
     }
   ]
 }

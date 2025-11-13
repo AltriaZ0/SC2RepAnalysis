@@ -2,12 +2,17 @@ from app.config import settings
 from app.log import setup_logging, LOG
 from app.constants import VERSION, UPDATE_DATE
 import argparse
-from app.analysis.core import analyse_core
+from app.analysis.core import analyse_core, analyse_core_cmd
 from app.ProcessTrain.Trans import Trans
+import sys, json
+
 def parse_args(argv=None):
     p = argparse.ArgumentParser(prog="app")
     p.add_argument("--log-level", default="INFO")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    # Tauri输入：传入json的情况
+    s0 = sub.add_parser("json", help="根据传入的json配置进行分析")
 
     # alone
     s1 = sub.add_parser("alone", help="单回放分析")
@@ -27,21 +32,35 @@ def main(argv=None) -> int:
         setup_logging(settings.log_level)
 
         LOG.debug("Ciallo～(∠・ω< )⌒★，这里是由AIlian制作的SC2Replay分析工具，欢迎加入sc2萌新吹毛切磋群924040544哟~")
-        LOG.info("当前版本{}，更新日期{}".format(VERSION,UPDATE_DATE))
+        # LOG.info("当前版本{}，更新日期{}".format(VERSION,UPDATE_DATE))
         LOG.info("运行模式:%s, 日志级别:%s", settings.mode, settings.log_level)
-        LOG.debug("This is a DEBUG detail (visible only when log_level=DEBUG)")
+        # LOG.debug("This is a DEBUG detail (visible only when log_level=DEBUG)")
         # if settings.fulltime == "no":
         #     LOG.info("这其实是一个配置的测试：Fulltime mode not activated.")
 
         args = parse_args(argv)
-
         if args.cmd == "train":
             Trans(args.kind)
+        elif args.cmd == "json":
+            sys.stdin.reconfigure(encoding="utf-8")
+            sys.stdout.reconfigure(encoding="utf-8")
+            json_data = sys.stdin.read()
+            req = json.loads(json_data)
+            
+            LOG.info(req)
+            resp = analyse_core(req)
+            LOG.info(resp)
+            
+            sys.stdout.write(json.dumps(resp, ensure_ascii=False,default=str))
+            sys.stdout.flush()
         else:
-            analyse_core(args)
+            analyse_core_cmd(args)
+
 
         LOG.info("App exit successfully, bye!")
+
         return 0
+
     
     except Exception as e:
         LOG.exception("Unhandled exception: %s", e)

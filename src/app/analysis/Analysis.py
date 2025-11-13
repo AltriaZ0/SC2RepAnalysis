@@ -1,16 +1,16 @@
-from app.libs import *
+from app.libsK import *
 from app.constants import DATA_DIR
 from app.config import settings
-
+import traceback
 
 LOG = logging.getLogger("app.analysis")
 
 class ReplayAnalyzer:
-    def __init__(self, replaypath: str, rep_basedir: str):
+    def __init__(self, replaypath: str, output_dir: str):
         self.replaypath = replaypath
-        self.rep_basedir = rep_basedir
+        self.output_dir = output_dir
         self.rep_name = os.path.basename(replaypath)
-        self.output_path = f"{rep_basedir}\\SC2RepAnalysis\\{self.rep_name}"
+        self.output_path = f"{output_dir}\\{self.rep_name}"
         self.replay = None
         self.duration = 0
         self.event_categories = {}
@@ -33,6 +33,11 @@ class ReplayAnalyzer:
         self.Fullinf=[] # 完整单位信息
         self.UBE_List={}
         self.PdS=[]
+        self.replay_info = {} # 录像基本信息
+        self.racebattle = "" # 种族对抗
+        self.build_order = {} # 用于返回json
+        self.player_BaseInfo = {}
+        self.winner = "None"
 
         self.ube_players = {}  # 单位建造事件
         self.uie_players = {}  # 建筑建造事件
@@ -42,6 +47,8 @@ class ReplayAnalyzer:
         self.pse_players = {}  # 人口/农民数据
         self.data_for_excel = {}  # 用于导出的数据
         self.summary_row = []   # 汇总行（用于 DataFrame）
+
+
         LOG.debug("初始化完成")
 
     @staticmethod
@@ -69,12 +76,14 @@ class ReplayAnalyzer:
 
             # 格式化与输出
             self._format_data_for_output()
-            # self._write_text_report()
-            # self._write_excel_reports()
-
-            return 0
+            # self._write_text_report() # TODO
+            # self._write_excel_reports() # TODO
+            self.build_replay_info()
+            
+            return self.replay_info
         except Exception as e:
             LOG.error("Analysis failed for %s: %s", self.rep_name, str(e))
+            LOG.error(traceback.format_exc())
             return -1
 
     def _load_replay(self):
@@ -471,30 +480,53 @@ class ReplayAnalyzer:
         
         LOG.debug("统计人口信息--ok")
     def _format_data_for_output(self):
+
     #-------------------------------11.格式化输出------------------------------------------#
         file = open('{}/{}.txt'.format(self.output_path,self.rep_name), 'w',encoding="utf-8")
         DataForPd={}
 
         for i in self.replay.players:
-            file.write("选手{}的建造列表：".format(i)) 
+            player_name = re.match('\w{0,}',str(i)[11:]).group()
+            
+            self.player_BaseInfo[player_name] = {}
+            self.player_BaseInfo[player_name]["buildOrder"] = []
+            file.write("选手{}的建造列表：".format(i))
             j=0
-            DataForPd[i]=[]
+            DataForPd[player_name]=[]
             try:
                 if i not in self.replay.winner:
                     whetherwin="负"
+                    self.player_BaseInfo[player_name]["result"] = False
                 else:
                     whetherwin="胜"
+                    self.winner = player_name
+                    self.player_BaseInfo[player_name]["result"] = True
             except:
                 whetherwin="无胜者"
+                self.player_BaseInfo[player_name]["result"] = False
             
             try:
                 if i==self.replay.players[0]:
-                    racebattle='{}v{}'.format(self.replay.players[0].play_race[0],self.replay.players[1].play_race[0])
+                    self.racebattle='{}v{}'.format(self.replay.players[0].play_race[0],self.replay.players[1].play_race[0])
                 else:
-                    racebattle='{}v{}'.format(self.replay.players[1].play_race[0],self.replay.players[0].play_race[0])
+                    self.racebattle='{}v{}'.format(self.replay.players[1].play_race[0],self.replay.players[0].play_race[0])
             except:
-                racebattle='{}v{}'.format(self.replay.players[0].play_race[0],"None")
-            self.PdS.append([re.match('\w{0,}',str(i)[11:]).group(),self.replay.map_name,i.play_race,racebattle,"{}:{}".format(round(self.duration/1.4)//60,round(self.duration/1.4)%60),whetherwin,"","","","{}".format(self.replaypath)])
+                self.racebattle='{}v{}'.format(self.replay.players[0].play_race[0],"None")
+            self.PdS.append([
+                player_name,
+                self.replay.map_name,
+                i.play_race,
+                self.racebattle,
+                "{}:{}".format(round(self.duration/1.4)//60,round(self.duration/1.4)%60),
+                whetherwin,
+                "",
+                "",
+                "",
+                "{}".format(self.replaypath)])
+            
+            self.player_BaseInfo[player_name]["race"] = str(i.play_race)
+            
+
             while j<self.duration:
                 #---------------构造DataFrame格式的数据-----------------------------#
                 s=[i,"{}:{}".format(round(j/1.4)//60,round(j/1.4)%60)]
@@ -634,30 +666,50 @@ class ReplayAnalyzer:
                     s.append("")
 
                 #-----------------------处理该秒没有发生event的情况-----------------------------#
-                tep="\n[{}]".format(s[1])
+                time_now="{}".format(s[1])
+                build_now=""
+
                 if settings.fulltime=="yes":
-                    DataForPd[i].append(s[1:])
+                    DataForPd[player_name].append(s[1:])
                 else:
                     if s[4] or s[5] or s[6]:           
-                        if s[3]:
-                            tep+="|农民{}|，".format(s[3])
+                        # if s[3]:
+                        #     build_now+="|农民{}|，".format(s[3])
                         if s[4]:
-                            tep+="{}，".format(s[4])
+                            build_now+="{},".format(s[4])
+
                         if s[5]:
-                            tep+="{}，".format(s[5])
+                            build_now+="{},".format(s[5])
                         if s[6]:
-                            tep+="{}".format(s[6])
-                        file.write(tep)
-                        DataForPd[i].append(s[1:])
+                            build_now+="{}".format(s[6])
+                        self.player_BaseInfo[player_name]["buildOrder"].append({
+                            "t": time_now,
+                            "action": build_now
+                        })
+                        file.write(time_now+" "+build_now+"\n")
+                        DataForPd[player_name].append(s[1:])
                 #-------------------------------------------------#
                 if round(j/1.4)==round((j+1)/1.4):
                     j+=1
                 j+=1 
             file.write("\n-------------------------------------------------------------------------------\n")
+            Inf_to_excel = pd.DataFrame(DataForPd[self.PdS[-1][0]],columns=['时间','人口','农民','单位建造','建造建筑','科技升级','当前存活单位'])
+            output_path = "{}/{}-{}-{}-{}-{}-{}.xlsx".format(self.output_path,self.PdS[-1][0],self.PdS[-1][1],self.PdS[-1][2],self.PdS[-1][3],self.PdS[-1][5],self.rep_name[:-10])
+            self.player_BaseInfo[player_name]["outputPath"]=output_path
+            Inf_to_excel.to_excel(output_path,index=False)
         file.close()
-        for i in DataForPd:
-            Inf_to_excel = pd.DataFrame(DataForPd[i],columns=['时间','人口','农民','单位建造','建造建筑','科技升级','当前存活单位'])
-            Inf_to_excel.to_excel("{}/{}的建造列表({}).xlsx".format(self.output_path,i,self.rep_name[:-10]),index=False)
-        
-        LOG.debug("格式化输出excel和txt--ok")
 
+
+
+        LOG.debug("格式化输出excel和txt--ok")
+        
+    def build_replay_info(self):
+        self.replay_info["map_name"] = self.replay.map_name
+        self.replay_info["ladder?"] = self.replay.is_ladder
+        self.replay_info["duration"] = self.duration
+        self.replay_info["playersInfo"] = self.player_BaseInfo
+        self.replay_info["winner"] = self.winner
+        self.replay_info["region"] = self.replay.region
+        self.replay_info["endTime"] = self.replay.end_time
+        self.replay_info["raceBattle"] = self.racebattle
+        self.replay_info["output"] = self.output_path

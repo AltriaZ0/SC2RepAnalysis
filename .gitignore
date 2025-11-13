@@ -1,5 +1,5 @@
 Str.md
-__pycache__
+
 
 # Rust
 target/
@@ -19,3 +19,14 @@ logs/
 # VSCode
 .vscode/
 *.jks
+
+#python:
+build
+dist
+__pycache__
+.venv
+.env
+main.spec
+
+#temp file
+BatchB.vue

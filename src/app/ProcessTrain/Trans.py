@@ -1,8 +1,6 @@
-from libs import *
+from app.libsK import *
 from tkinter import *
 from tkinter import filedialog
-import pandas as pd
-import time
 import win32console
 import win32gui
 
