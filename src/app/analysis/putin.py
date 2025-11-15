@@ -20,7 +20,12 @@ def _emit(progress: ProgressCb, msg: str) -> None:
         except Exception:
             LOG.exception("progress callback failed")
 
-def AloneRep(replay_path:str | Path, output_dir: str | Path, progress: ProgressCb = None) -> None:
+def AloneRep(
+    replay_path:str | Path,
+    output_dir: str | Path, 
+    options: dict[str, Any] | None = None,
+    progress: ProgressCb = None,
+):
     replay_path = Path(replay_path)
     output_dir = Path(output_dir)
 
@@ -34,9 +39,10 @@ def AloneRep(replay_path:str | Path, output_dir: str | Path, progress: ProgressC
     LOG.info("选取的 Rep 文件路径: %s", replay_path)
     LOG.info("将在此目录创建分析输出: %s\SC2RepAnalysis\%s", output_dir, name)
     _emit(progress, f"开始解析: {name}")
+    opts = options or {}
 
     try:
-        analyzer = ReplayAnalyzer(str(replay_path), output_dir)
+        analyzer = ReplayAnalyzer(str(replay_path), output_dir, options=opts)
         result = analyzer.analyze() 
     except Exception as e:
         LOG.exception("解析 replay 失败: %s", replay_path)
@@ -49,18 +55,18 @@ def AloneRep(replay_path:str | Path, output_dir: str | Path, progress: ProgressC
     _emit(progress, msg)
     return result
 
-def MultiRep(replay_dir:str | Path, output_dir: str | Path, progress: ProgressCb = None) -> None:
+def MultiRep(replay_dir:str | Path, output_dir: str | Path, options: dict[str, Any] | None = None, progress: ProgressCb = None) -> None:
     replay_dir = Path(replay_dir)
     output_dir = Path(output_dir)
     summary_dir = output_dir / "summary"
     summary_dir.mkdir(parents=True, exist_ok=True)
     LOG.info("replay_dir:%s",replay_dir)
-
+    opts = options or {}
     S=[]
     for r,d,f in os.walk(replay_dir):
         for j in f:
             if j[-9:]=='SC2Replay':
-                T=ReplayAnalyzer("{}/{}".format(r,j),output_dir) 
+                T=ReplayAnalyzer("{}/{}".format(r,j),output_dir,options=opts) 
                 T.analyze()
                 result = T.PdS
                 if T:

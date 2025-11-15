@@ -10,14 +10,17 @@ use tauri::{command, AppHandle, Manager};
 struct AnalyzeOptions {
     analyze_type: String,
     output_dir: String,
-    basic: bool,
-    bo: bool,
-    actions: bool,
-    units: bool,
-    mapheat: bool,
+    fulltime: bool,
+    cancel: bool,
+    buildList: bool,
+    upgradeList: bool,
+    UnitList: bool,
+    terranFly: bool,
+    workerNumber: bool,
     exportXlsx: bool,
-    tz: String,
-    lang: String,
+    exportTxt: bool,
+    // tz: String,
+    // lang: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

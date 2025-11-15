@@ -6,7 +6,57 @@ import traceback
 LOG = logging.getLogger("app.analysis")
 
 class ReplayAnalyzer:
-    def __init__(self, replaypath: str, output_dir: str):
+    def __init__(self, replaypath: str, output_dir: str, options: dict[str, Any] | None = None):
+
+        # 当前option配置：
+        # 'UnitList': True,     
+        #  'buildList': True,   
+        # 'analyze_type': 'alone',
+        # 'cancel': True, 
+        # 'exportTxt': True,
+        #  'exportXlsx': True,
+        #  'fulltime': True, 
+        # 'output_dir': 'C:\\Users\\Altria\\AppData\\Roaming\\com.altria.sc2repshell', 
+        # 'terranFly': False, 
+        # 'upgradeList': True, 
+        # 'workerNumber': True
+
+        if not options:
+           options = {
+            'UnitList': False,   # √  
+            'buildList': False,   # √  
+            'analyze_type': '', # 不使用
+            'cancel': True, 
+            'exportTxt': True, 
+            'exportXlsx': True,
+            "fulltime": False, # √  
+            'output_dir': '',  #不使用
+            'terranFly': False,  
+            'upgradeList': True, # √    
+            'workerNumber': False # √  
+            }
+           
+        self.options = options
+        LOG.info("传入的分析配置:\n %s \n",self.options)
+
+        # 表格标签
+        self.whichItem = ["时间"]
+        # if(self.options["Population"]):
+            # self.whichItem.append("人口")
+        self.whichItem.append("人口数量")
+        if(self.options["workerNumber"]):
+            self.whichItem.append("工人数量")
+        if(self.options["UnitList"]):
+            self.whichItem.append("单位建造")
+        if (self.options["buildList"]):
+            self.whichItem.append("建筑建造")
+        if(self.options["upgradeList"]):
+            self.whichItem.append("科技升级")
+
+        # if(self.options["unitAlive"]):
+            # self.whichItem.append("存活单位")
+        self.whichItem.append("存活单位")
+
         self.replaypath = replaypath
         self.output_dir = output_dir
         self.rep_name = os.path.basename(replaypath)
@@ -23,11 +73,17 @@ class ReplayAnalyzer:
         self.Ilist = self._load_toml(DATA_DIR / "build.toml")["Ilist"]
         self.upgrade_times = self._load_toml(DATA_DIR / "upgrade.toml")["Ulist"]
 
+        # 分析配置：
+        self.buildIgnoreList = ["菌毯","建造后取消","防空管子","补给站","水晶","起飞","脱离","电池","气矿"] 
+
+
+        # 中间过程数组
         self.unit_born_events = [] # 单位出生事件：未按时间和player分组
         self.full_unit_events = [] # 完整单位出生事件：未按时间和player分组
         self.unit_init_events = [] # 单位出生事件：按时间和player分组
         self.unit_change_events = [] # 单位变化事件：未按时间和player分组
         self.player_stats_events = [] # 玩家数据事件：未按时间和player分组
+
 
         # 存储分析结果
         self.Fullinf=[] # 完整单位信息
@@ -297,25 +353,29 @@ class ReplayAnalyzer:
         self.ua_players={name:{} for name in self.replay.players}
         for i in self.UBE_List: #遍历每个选手，i是选手名
             for j in self.UBE_List[i]: #遍历每秒，j是秒,除了第0秒之外，令当前秒等于上一秒
+                # 每秒信息初始化
                 if j!=0:
                     Unitalive[i][j]=Unitalive[i][j-1]
                 else: 
                     Unitalive[i][j]={}
-                for n in range(len(self.UBE_List[i][j])): #遍历每秒钟的出生项和死亡项,n=0为出生项，n=1为死亡项
+
+                #遍历每秒钟的出生项和死亡项,n=0为出生项，n=1为死亡项
+                for n in range(len(self.UBE_List[i][j])): 
+                    #遍历每个单位
                     for nn in self.UBE_List[i][j][n]:
                         if n==0:
                             if nn not in Unitalive[i][j]:
                                 Unitalive[i][j][nn]=0
-                            #print(Unitalive[i][j][nn])
                             Unitalive[i][j][nn]+=1
                         if n==1:
-                            try: #如果因为某些原因在存活数量为0时还会死亡单位，就将该单位存活数量设定为0
+                            #如果因为某些原因在存活数量为0时还会死亡单位，就将该单位存活数量设定为0
+                            try: 
                                 Unitalive[i][j][nn]-=1
                             except:
                                 Unitalive[i][j][nn]=0
+                                
                             if Unitalive[i][j][nn]==0:
                                 del Unitalive[i][j][nn] 
-                
                 self.ua_players[i][j]=list(Unitalive[i][j].items())
         LOG.debug("统计生存单位--ok")
 
@@ -476,23 +536,22 @@ class ReplayAnalyzer:
                     for j in self.pse_players:
                         self.pse_players[j][current_second]=[]
             if current_second!=0:
-                self.pse_players[i.player][i.second].append("{}/{}/{}".format(int(i.food_used),int(i.food_made),int(i.workers_active_count)))
+                self.pse_players[i.player][i.second]=("{}/{}/{}".format(int(i.food_used),int(i.food_made),int(i.workers_active_count)))
+
         
         LOG.debug("统计人口信息--ok")
     def _format_data_for_output(self):
-
     #-------------------------------11.格式化输出------------------------------------------#
         file = open('{}/{}.txt'.format(self.output_path,self.rep_name), 'w',encoding="utf-8")
         DataForPd={}
-
         for i in self.replay.players:
             player_name = re.match('\w{0,}',str(i)[11:]).group()
-            
             self.player_BaseInfo[player_name] = {}
             self.player_BaseInfo[player_name]["buildOrder"] = []
-            file.write("选手{}的建造列表：".format(i))
+            file.write("选手{}的建造列表：\n".format(i))
             j=0
             DataForPd[player_name]=[]
+            # 统计胜负信息
             try:
                 if i not in self.replay.winner:
                     whetherwin="负"
@@ -504,7 +563,7 @@ class ReplayAnalyzer:
             except:
                 whetherwin="无胜者"
                 self.player_BaseInfo[player_name]["result"] = False
-            
+            # 统计种族对抗信息
             try:
                 if i==self.replay.players[0]:
                     self.racebattle='{}v{}'.format(self.replay.players[0].play_race[0],self.replay.players[1].play_race[0])
@@ -512,6 +571,8 @@ class ReplayAnalyzer:
                     self.racebattle='{}v{}'.format(self.replay.players[1].play_race[0],self.replay.players[0].play_race[0])
             except:
                 self.racebattle='{}v{}'.format(self.replay.players[0].play_race[0],"None")
+
+            # 填充表格信息
             self.PdS.append([
                 player_name,
                 self.replay.map_name,
@@ -529,68 +590,62 @@ class ReplayAnalyzer:
 
             while j<self.duration:
                 #---------------构造DataFrame格式的数据-----------------------------#
-                s=[i,"{}:{}".format(round(j/1.4)//60,round(j/1.4)%60)]
-                
+                dataPerSecond = {}
+                dataPerSecond["time"] = "{}:{}".format(round(j/1.4)//60,round(j/1.4)%60)
+                same_second = (round(j / 1.4) == round((j + 1) / 1.4)) #在用于判断是否处于同一秒的标志
                 #----------------非常混沌的部分-数据整理：遍历各个项目，对重复的计数，对处于同一秒的整合-----------#
+
+                # 人口数量统计：读取的玩家的信息
+                population_number=''
                 if j<len(self.pse_players[i]):
-                    cc=[]
-                    if round(j/1.4)==round((j+1)/1.4) and j+1<len(self.pse_players[i]) and (self.pse_players[i][j] or self.pse_players[i][j+1]):
-                        if self.pse_players[i][j]:
-                            cc.append("{}".format(self.pse_players[i][j][0]))
+                    if same_second and j + 1 < len(self.pse_players[i]):
+                        population_number=self.pse_players[i][j+1] if self.pse_players[i][j+1] else self.pse_players[i][j] if self.pse_players[i][j] else ''
+                    else:
+                        population_number=self.pse_players[i][j] if self.pse_players[i][j] else ''
+                dataPerSecond["population"] = str(population_number)
+                
+                # 农民数量统计
+                if self.options["workerNumber"]:
+                    worker_number = 0
+                    if j<len(self.ua_players[i]) :
+                        number=0
+                        number1=0
+                        for n in self.ua_players[i][j]:
+                            if ('工蜂' in n) or ('SCV' in n ) or ('探姬' in n):
+                                number += int(n[1])
+                        
+                        if j+1<len(self.ua_players[i]):
+                            for n in self.ua_players[i][j+1]:
+                                if ('工蜂' in n) or('SCV' in n )or ('探姬' in n):
+                                    number1 += int(n[1])
+                        if same_second and j+1<len(self.ua_players[i]):
+                            worker_number=number1
                         else:
-                            cc.append("{}".format(self.pse_players[i][j+1][0]))
-                    else:
-                        if self.pse_players[i][j]:
-                            cc.append("{}".format(self.pse_players[i][j][0]))
-                    if cc:
-                        s.append(cc[0])
-                    else:
-                        s.append('')
-                else:
-                    s.append("")
+                            worker_number=number
+                    dataPerSecond["worker"] = str(worker_number)
 
-                if j<len(self.ua_players[i]):
-                    number=""
-                    number1=""
-                    for n in self.ua_players[i][j]:
-                        if ('工蜂' in n) or('SCV' in n )or ('探姬' in n):
-                            number=n[1]
-                    cc=[]
-                    if j+1<len(self.ua_players[i]):
-                        for n in self.ua_players[i][j+1]:
-                            if ('工蜂' in n) or('SCV' in n )or ('探姬' in n):
-                                number1=n[1]
+                # 单位建造统计
+                if self.options["UnitList"]:
+                    unit_born_record=""
+                    if j<len(self.ube_players[i]):
+                        sum_born=[]
+                        born_a_second=[]
+                        # 如果是同一秒，就合并
+                        if same_second and j+1<len(self.ube_players[i]):
+                            born_a_second = self.ube_players[i][j+1] + self.ube_players[i][j]
+                        else:
+                            born_a_second = self.ube_players[i][j]
 
-                    if round(j/1.4)==round((j+1)/1.4) and j+1<len(self.ua_players[i]):
-                        cc.append("{}".format(number1))
-                    else:
-                        cc.append("{}".format(number))
-                    if cc:
-                        s.append(cc[0])
-                    else:
-                        s.append('')
-                else:
-                    s.append("")    
-
-                if j<len(self.ube_players[i]):
-                    cc=[]
-                    dd=[]
-                    if round((j/1.4))==round(((j+1)/1.4)) and j+1<len(self.ube_players[i]):
-                        dd.append(self.ube_players[i][j]+self.ube_players[i][j+1])
-                        for c in Counter(self.ube_players[i][j]+self.ube_players[i][j+1]):
-                            cc.append("{}*{}".format(c,Counter(self.ube_players[i][j]+self.ube_players[i][j+1])[c]))
-                    else:
-                        dd.append(self.ube_players[i][j])
-                        for c in Counter(self.ube_players[i][j]):
-                            cc.append("{}*{}".format(c,Counter(self.ube_players[i][j])[c]))
-                    if cc:
-                        s.append(','.join(cc))
-                        for ddd in dd:
-                            self.PdS[-1][8]+=','.join(ddd)+','
-                    else:
-                        s.append('')
-                else:
-                    s.append("")
+                        if born_a_second:
+                            counts = Counter(born_a_second)
+                            sum_born = ["{}*{}".format(c, counts[c]) for c in counts]
+                        # 如果这一秒发生了单位建造
+                        if sum_born:
+                            unit_born_record=','.join(sum_born)
+                            # 在汇总表格中记录
+                            for unitborn in born_a_second:
+                                self.PdS[-1][8]+=','.join(unitborn)+','
+                    dataPerSecond["unitBorn"] = unit_born_record
 
 
                 """if j<len(uce_players[i]):
@@ -606,107 +661,97 @@ class ReplayAnalyzer:
                     s.append([])"""
 
 
-                #在此处去除了菌毯对于流程分析的影响
-                if 'UnitInitEvent' in self.event_categories:
-                    if j<len(self.uie_players[i]):
-                        cc=[]
-                        dd=[]
-                        if round(j/1.4)==round((j+1)/1.4) and j+1<len(self.uie_players[i]): 
-                            for ccc in self.uie_players[i][j]+self.uie_players[i][j+1]:                     
-                                if ('菌毯' not in ccc) and ("建造后取消" not in ccc) and ("防空管子" not in ccc)  and ("补给站" not in ccc) and ("水晶" not in ccc) and ("起飞" not in ccc) and ("脱离" not in ccc) and ("电池" not in ccc) and ("气矿" not in ccc):
-                                    dd.append(ccc)  
-                            for c in Counter(self.uie_players[i][j]+self.uie_players[i][j+1]):                        
-                                cc.append("{}*{}".format(c,Counter(self.uie_players[i][j]+self.uie_players[i][j+1])[c]))
-                        else:
-                            for ccc in self.uie_players[i][j]:
-                                if ('菌毯' not in ccc) and ("建造后取消" not in ccc) and ("防空管子" not in ccc)  and ("补给站" not in ccc) and ("水晶" not in ccc) and ("起飞" not in ccc) and ("脱离" not in ccc) and ("电池" not in ccc) and ("气矿" not in ccc):
-                                    dd.append(ccc)
-                            for c in Counter(self.uie_players[i][j]):
-                                cc.append("{}*{}".format(c,Counter(self.uie_players[i][j])[c]))
-                        if cc:
-                            s.append(','.join(cc))
-                            if dd:
-                                self.PdS[-1][7]+=','.join(dd)+','
-                        else:
-                            s.append('')
-                    else:
-                        s.append("")
-                else:
-                    s.append("")
+                # 统计建筑建造事件
+                if self.options["buildList"]:
+                    Building_build_record=""
+                    if 'UnitInitEvent' in self.event_categories:
+                        if j<len(self.uie_players[i]):
+                            sum_build=[]
+                            build_a_second = []
+                            if same_second and j+1<len(self.uie_players[i]): 
+                                build_a_second = self.uie_players[i][j+1] + self.uie_players[i][j]
+    
+                            else:
+                                build_a_second = self.uie_players[i][j]
+                            # 根据导入的buildIgnoreList, 去除指定的建筑
+                            build_a_second = [build for build in build_a_second if build not in self.buildIgnoreList]
 
-                    
-                if j<len(self.ue_players[i]):
-                    cc=[]
-                    if round(j/1.4)==round((j+1)/1.4) and j+1<len(self.ue_players[i]):
-                        for c in self.ue_players[i][j]+self.ue_players[i][j+1]:
-                            cc.append(c)
-                    else:
-                        for c in self.ue_players[i][j]:
-                            cc.append(c)
-                    if cc:
-                        s.append(','.join(cc))
-                        self.PdS[-1][6]+=','.join(cc)+','
-                    else:
-                        s.append('')
-                else:
-                    s.append("")
+                            counts = Counter(build_a_second)
+                            sum_build = ["{}*{}".format(c, counts[c]) for c in counts]
+                            if sum_build:
+                                Building_build_record = (','.join(sum_build))
+                                if build_a_second:
+                                    self.PdS[-1][7]+=','.join(build_a_second)+','
+                    dataPerSecond["building"] = Building_build_record
 
-                
+                # 科技升级统计
+                if self.options["upgradeList"]:
+                    Upgrade_record=""
+                    if j<len(self.ue_players[i]):
+                        sum_upgrade=[]
+                        if same_second and j+1<len(self.ue_players[i]):
+                            for c in self.ue_players[i][j]+self.ue_players[i][j+1]:
+                                sum_upgrade.append(c)
+                        else:
+                            for c in self.ue_players[i][j]:
+                                sum_upgrade.append(c)
+                        if sum_upgrade:
+                            Upgrade_record =(','.join(sum_upgrade))
+                            self.PdS[-1][6]+=','.join(sum_upgrade)+','
+                    dataPerSecond["upgrade"] = Upgrade_record
+
+                # 单位存活统计
+                unit_alive_record=""
                 if j<len(self.ua_players[i]):
-                    cc=[]
                     if round(j/1.4)==round((j+1)/1.4) and j+1<len(self.ua_players[i]):
-                        cc.append("{}".format(self.ua_players[i][j+1]))
+                        unit_alive_record = "{}".format(self.ua_players[i][j+1])
                     else:
-                        cc.append("{}".format(self.ua_players[i][j]))
-                    if cc:
-                        s.append(cc[0])
-                    else:
-                        s.append('')
-                else:
-                    s.append("")
+                        unit_alive_record = "{}".format(self.ua_players[i][j])
+                dataPerSecond["unitAlive"] = unit_alive_record
 
                 #-----------------------处理该秒没有发生event的情况-----------------------------#
-                time_now="{}".format(s[1])
+                time_now=dataPerSecond["time"]
                 build_now=""
+                Key = ["unitBorn", "building", "upgrade"]
+                ListForExcel = []
+                if dataPerSecond.get("unitBorn") or dataPerSecond.get("building") or dataPerSecond.get("upgrade") or self.options["fulltime"]:                # 只要发生了事件或者是全时间模式
+                    # if s[3]:
+                    #     build_now+="|农民{}|，".format(s[3])
+                    if "unitBorn" in dataPerSecond and dataPerSecond["unitBorn"]:
+                        build_now+="{},".format(dataPerSecond["unitBorn"])
+                    if "building" in dataPerSecond and dataPerSecond["building"]:
+                        build_now+="{},".format(dataPerSecond["building"])
+                    if "upgrade" in dataPerSecond and dataPerSecond["upgrade"]:
+                        build_now+="{}".format(dataPerSecond["upgrade"])
 
-                if settings.fulltime=="yes":
-                    DataForPd[player_name].append(s[1:])
-                else:
-                    if s[4] or s[5] or s[6]:           
-                        # if s[3]:
-                        #     build_now+="|农民{}|，".format(s[3])
-                        if s[4]:
-                            build_now+="{},".format(s[4])
+        
+                    self.player_BaseInfo[player_name]["buildOrder"].append({
+                        "t": time_now,
+                        "action": build_now
+                    })
 
-                        if s[5]:
-                            build_now+="{},".format(s[5])
-                        if s[6]:
-                            build_now+="{}".format(s[6])
-                        self.player_BaseInfo[player_name]["buildOrder"].append({
-                            "t": time_now,
-                            "action": build_now
-                        })
-                        file.write(time_now+" "+build_now+"\n")
-                        DataForPd[player_name].append(s[1:])
-                #-------------------------------------------------#
+                    file.write(time_now+" "+build_now+"\n")
+
+                    for(k,v) in dataPerSecond.items():
+                        ListForExcel.append(v)
+                    DataForPd[player_name].append(ListForExcel)
+
                 if round(j/1.4)==round((j+1)/1.4):
                     j+=1
                 j+=1 
             file.write("\n-------------------------------------------------------------------------------\n")
-            Inf_to_excel = pd.DataFrame(DataForPd[self.PdS[-1][0]],columns=['时间','人口','农民','单位建造','建造建筑','科技升级','当前存活单位'])
+            Inf_to_excel = pd.DataFrame(DataForPd[self.PdS[-1][0]],columns=self.whichItem)
             output_path = "{}/{}-{}-{}-{}-{}-{}.xlsx".format(self.output_path,self.PdS[-1][0],self.PdS[-1][1],self.PdS[-1][2],self.PdS[-1][3],self.PdS[-1][5],self.rep_name[:-10])
             self.player_BaseInfo[player_name]["outputPath"]=output_path
             Inf_to_excel.to_excel(output_path,index=False)
         file.close()
-
-
 
         LOG.debug("格式化输出excel和txt--ok")
         
     def build_replay_info(self):
         self.replay_info["map_name"] = self.replay.map_name
         self.replay_info["ladder?"] = self.replay.is_ladder
-        self.replay_info["duration"] = self.duration
+        self.replay_info["duration"] = int(self.duration/1.4)
         self.replay_info["playersInfo"] = self.player_BaseInfo
         self.replay_info["winner"] = self.winner
         self.replay_info["region"] = self.replay.region

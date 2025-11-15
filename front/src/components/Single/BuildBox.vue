@@ -2,12 +2,17 @@
 <template>
   <div class="card">
     <!-- 标题 -->
-     <div class="buildBox_title">
-        <h3 class="box_title">Build Order</h3> 
-       <div class="toggle-btn" id="openResult" @click="openExportDir_player(outputPath)">打开分析结果</div>
-     </div>
-
-
+    <div class="buildBox_title">
+      <h3 class="box_title">建造顺序</h3> 
+      <div class="title-actions">
+        <div class="toggle-btn" @click="copyBO(content)">
+          复制建造顺序
+        </div>
+        <div class="toggle-btn" id="openResult" @click="openExportDir_player(outputPath)">
+          打开分析结果
+        </div>
+      </div>
+    </div>
     <!-- 正文内容（支持展开/收起） -->
     <div class="box_content" :class="{ collapsed: isCollapsed }">
         <ul class="bo-list">
@@ -23,6 +28,7 @@
     </button>
 
   </div>
+
 </template>
 
 <script setup lang="ts">
@@ -79,11 +85,33 @@ const props = defineProps({
 })
 
 
+async function copyBO(steps: BoStep[] | undefined) {
+  if (!steps || !steps.length) {
+    console.log('没有可复制的建造顺序')
+    return
+  }
 
+  const text = steps
+    .map(s => `${s.t}\t${s.action}`)
+    .join('\n')
+
+  try {
+    await navigator.clipboard.writeText(text)
+    console.log('✅ 建造顺序已复制到剪贴板')
+  } catch (err) {
+    console.error('❌ 复制建造顺序失败:', err)
+  }
+}
 
 </script>
 
+
 <style scoped>
+.title-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 #openResult {
   background: var(--success); 
@@ -95,10 +123,6 @@ const props = defineProps({
   font-size: 12px;
   cursor: pointer;
   transition: background-color 0.2s ease;
-}
-
-#openResult{
-
 }
 
 .buildBox_title {

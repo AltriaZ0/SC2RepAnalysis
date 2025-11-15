@@ -35,10 +35,10 @@
             <button class="btn tiny" @click="clearFile">移除</button>
           </div>
           <ul class="meta">
-            <li><span clss="left" >名称</span><span clss="right">{{ fileMeta.name }}</span></li>
-            <li><span clss="left">大小</span><span clss="right">{{ prettySize(fileMeta.size) }}</span></li>
-            <li><span clss="left">修改时间</span><span clss="right">{{ fileMeta.mtime }}</span></li>
-            <!-- <li><span>路径</span><span class="truncate" :title="fileMeta.path">{{ fileMeta.path }}</span></li> -->
+            <li><span>名称</span><span>{{ fileMeta.name }}              </span></li>
+            <li><span>大小</span> <span>{{ prettySize(fileMeta.size) }}</span></li>
+            <li><span>修改时间</span><span>{{ fileMeta.mtime }}</span></li>
+            <li><span>创建时间</span><span>{{ fileMeta.ctime }}          </span></li>
           </ul>
         </div>
 
@@ -48,15 +48,15 @@
             <button class="btn ghost tiny" @click="resetOptions">重置</button>
           </div>
           <div class="options">
-            <label class="opt"><input type="checkbox" v-model="opts.basic"/>只统计有事件发生的时间</label>
-            <label class="opt"><input type="checkbox" v-model="opts.bo"/> 提醒建造后取消的信息 </label>
-            <label class="opt"><input type="checkbox" v-model="opts.actions"/> 建筑建造统计 </label>
-            <label class="opt"><input type="checkbox" v-model="opts.actions"/> 科技升级统计 </label>
-            <label class="opt"><input type="checkbox" v-model="opts.units"/> 单位建造统计 </label>
-            <label class="opt"><input type="checkbox" v-model="opts.units"/> 不统计Terran的建筑移动 </label>
-            <label class="opt"><input type="checkbox" v-model="opts.mapheat"/> 农民数量统计(demo) </label>
+            <label class="opt"><input type="checkbox" v-model="opts.fulltime"/>统计全部时间（即使不发生建造）</label>
+            <label class="opt"><input type="checkbox" v-model="opts.cancel"/> 提醒建造后取消的信息 </label>
+            <label class="opt"><input type="checkbox" v-model="opts.buildList"/> 建筑建造统计 </label>
+            <label class="opt"><input type="checkbox" v-model="opts.upgradeList"/> 科技升级统计 </label>
+            <label class="opt"><input type="checkbox" v-model="opts.UnitList"/> 单位建造统计 </label>
+            <label class="opt"><input type="checkbox" v-model="opts.terranFly"/> 不统计Terran的建筑移动 </label>
+            <label class="opt"><input type="checkbox" v-model="opts.workerNumber"/> 农民数量统计(demo) </label>
             <label class="opt"><input type="checkbox" v-model="opts.exportXlsx"/> 导出 Excel（.xlsx）</label>
-            <label class="opt"><input type="checkbox" /> 导出 txt（旧功能）</label>
+            <label class="opt"><input type="checkbox" v-model="opts.exportTxt"/> 导出 txt（旧功能）</label>
           </div>
           <!-- <div class="row">
             <div class="col">
@@ -144,11 +144,21 @@ import { open } from '@tauri-apps/plugin-dialog'
 import {appDataDir} from '@tauri-apps/api/path'
 import BuildBox from './BuildBox.vue'
 import { openPath } from '@tauri-apps/plugin-opener';
+import { stat, type FileInfo } from '@tauri-apps/plugin-fs'
 
 const dragover = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
-const fileMeta = ref<null | { name: string; size: number; mtime: string; path: string }>(null)
+interface FileMeta {
+  name: string
+  size: number
+  ctime: string
+  mtime: string
+  path: string
+}
+
+const fileMeta = ref<FileMeta | null>(null)
+
 const busy = ref(false)
 const progress = ref(0)
 const errorMsg = ref('')
@@ -156,14 +166,18 @@ const errorMsg = ref('')
 const opts = reactive({
   analyze_type: "alone",
   output_dir: '' as string,
-  basic: true,
-  bo: true,
-  actions: true,
-  units: true,
-  mapheat: false,
+
+  fulltime: true,
+  cancel: true,
+  buildList: true,
+  upgradeList: true,
+  UnitList: true,
+  terranFly: false,
+  workerNumber: true,
   exportXlsx: true,
-  tz: 'local',
-  lang: 'zh'
+  exportTxt: true
+  // tz: 'local',
+  // lang: 'zh'
 })
 
 // 结果占位类型
@@ -198,9 +212,50 @@ function formatDuration(sec: number) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-function copyBO(player: string) {
 
+
+function formatFileTime(d: Date | null): string {
+  if (!d) return ''
+  return d.toLocaleString()
 }
+
+async function updateFileMetaFromPath(path: string, nameFromCaller?: string) {
+  try {
+    const info: FileInfo = await stat(path)  // 来自 @tauri-apps/plugin-fs
+
+   const fallbackName = path.split(/[/\\]/).pop() || '回放文件'
+  const name = nameFromCaller ?? fallbackName
+
+    const mtime = formatFileTime(info.mtime)
+    const ctime = formatFileTime(info.birthtime ?? info.mtime ?? null)
+
+    fileMeta.value = {
+      name,
+      size: info.size,
+      ctime: ctime || mtime,
+      mtime,
+      path,
+    }
+  } catch (err) {
+    console.error('stat failed', err)
+    const now = new Date().toLocaleString()
+    const fallbackName = path.split(/[/\\]/).pop() || '回放文件'
+    const name = nameFromCaller ?? fallbackName
+
+    // 出错时给一个兜底信息
+    fileMeta.value = {
+      name,
+      size: 0,
+      ctime: now,
+      mtime: now,
+      path,
+    }
+  }
+
+  result.value = null
+  errorMsg.value = ''
+}
+
 
 
 async function openExportDir() {
@@ -223,46 +278,50 @@ async function pickFile() {
     ]
   })
   if (!selected) return
+
   console.log('selected:', selected)
   const path = Array.isArray(selected) ? selected[0] : selected
   const name = path.split(/[/\\]/).pop() || '回放文件'
   console.log('name:', name)
   console.log('path:', path)
 
-  fileMeta.value = {
-    name,
-    size: 0,
-    mtime: new Date().toLocaleString(),
-    path, 
-  }
+  await updateFileMetaFromPath(path, name)
 
   result.value = null
   errorMsg.value = ''
 }
 
-function onFile(e: Event) {
+async function onFile(e: Event) {
   const f = (e.target as HTMLInputElement).files?.[0]
   if (!f) return
-  attachFile(f)
+  await attachFile(f)
 }
 
-function onDrop(e: DragEvent) {
+async function onDrop(e: DragEvent) {
   dragover.value = false
   const f = e.dataTransfer?.files?.[0]
   if (!f) return
-  attachFile(f)
+  await attachFile(f)
 }
 
-function attachFile(f: File) {
-  const mtime = new Date().toLocaleString()
-  fileMeta.value = {
-    name: f.name,
-    size: f.size,
-    mtime,
-    path: (f as any).path || '本地选择的回放'
+async function attachFile(f: File) {
+  const anyFile = f as any
+  const path: string | undefined = anyFile.path
+
+  if (path) {
+    await updateFileMetaFromPath(path, f.name)
+  } else {
+    const time = new Date(f.lastModified).toLocaleString()
+    fileMeta.value = {
+      name: f.name,
+      size: f.size,
+      ctime: time,
+      mtime: time,
+      path: '本地选择的回放',
+    }
+    result.value = null
+    errorMsg.value = ''
   }
-  result.value = null
-  errorMsg.value = ''
 }
 
 function clearFile() {
@@ -271,16 +330,18 @@ function clearFile() {
 }
 
 function resetOptions() {
-  opts.analyze_type = "alone"
-  output_dir: '' as string,
-  opts.basic = true
-  opts.bo = true
-  opts.actions = true
-  opts.units = true
-  opts.mapheat = false
-  opts.exportXlsx = true
-  opts.tz = 'local'
-  opts.lang = 'zh'
+  opts.analyze_type= "alone"
+  opts.fulltime= true
+  opts.cancel= true
+  opts.buildList= true
+  opts.upgradeList= true
+  opts.UnitList= true
+  opts.terranFly= false
+  opts.workerNumber= true
+  opts.exportXlsx= true
+  opts.exportTxt= true
+  // opts.tz = 'local'
+  // opts.lang = 'zh'
 }
 
 let unlisten: UnlistenFn | null = null
@@ -295,7 +356,7 @@ onMounted(async () => {
 
   opts.output_dir = await appDataDir() 
 
-  unlistenFileDrop = await listen<string[]>('tauri://drag-drop', (event) => {
+  unlistenFileDrop = await listen<string[]>('tauri://drag-drop', async  (event) => {
 
     const paths = event.payload.paths
     if (!paths || !paths.length) return
@@ -303,12 +364,7 @@ onMounted(async () => {
     const path = paths[0]
     const name = path.split(/[/\\]/).pop() || '回放文件'
 
-    fileMeta.value = {
-      name,
-      size: 0,
-      mtime: new Date().toLocaleString(),
-      path,
-    }
+    await updateFileMetaFromPath(path, name)
     result.value = null
     errorMsg.value = ''
   })
